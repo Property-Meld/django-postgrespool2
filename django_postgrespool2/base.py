@@ -126,6 +126,7 @@ class DatabaseWrapper(Psycopg2DatabaseWrapper):
         """
         Dispose of the pool for this instance, closing all connections.
         """
+        log.debug('Disposing of pool')
         self.close()
         self._pool_connection = None
         # _DBProxy.dispose doesn't actually call dispose on the pool
@@ -138,6 +139,7 @@ class DatabaseWrapper(Psycopg2DatabaseWrapper):
 
     @async_unsafe
     def get_new_connection(self, conn_params):
+        log.debug('Getting new connection')
         if not self._pool:
             self._pool = db_pool.get_pool(**conn_params)
         # get new connection through pool, not creating a new one outside.
