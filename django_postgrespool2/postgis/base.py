@@ -8,12 +8,6 @@ from django.contrib.gis.db.backends.postgis.operations import PostGISOperations 
 from django.contrib.gis.db.backends.postgis.features import DatabaseFeatures as DatabaseFeatures
 from django.db.backends.postgresql.creation import DatabaseCreation as Psycopg2DatabaseCreation
 
-try:
-    import statsd
-    has_statsd = True
-except ImportError:
-    has_statsd = False
-
 
 class DatabaseWrapper(Psycopg2DatabaseWrapper):
 
@@ -33,20 +27,9 @@ class DatabaseWrapper(Psycopg2DatabaseWrapper):
                 self._pool_connection.invalidate()
             with self.wrap_database_errors:
                 return self._pool_connection.close()
-            
-    
-    @async_unsafe
-    def close(self):
-        if has_statsd:
-            counter = statsd.Counter("django_postgrespool2.connection.close")
-            counter += 1
-        super().close()
 
     @async_unsafe
     def create_cursor(self, name=None):
-        if has_statsd:
-            counter = statsd.Counter("django_postgrespool2.cursor.create")
-            counter += 1
         if name:
             # In autocommit mode, the cursor will be used outside of a
             # transaction, hence use a holdable cursor.
@@ -67,9 +50,6 @@ class DatabaseWrapper(Psycopg2DatabaseWrapper):
         """
         Dispose of the pool for this instance, closing all connections.
         """
-        if has_statsd:
-            counter = statsd.Counter("django_postgrespool2.pool.dispose")
-            counter += 1
         self.close()
         self._pool_connection = None
         # _DBProxy.dispose doesn't actually call dispose on the pool
@@ -82,9 +62,6 @@ class DatabaseWrapper(Psycopg2DatabaseWrapper):
 
     @async_unsafe
     def get_new_connection(self, conn_params):
-        if has_statsd:
-            counter = statsd.Counter("django_postgrespool2.connection.get_new")
-            counter += 1
         if not self._pool:
             self._pool = db_pool.get_pool(**conn_params)
         # get new connection through pool, not creating a new one outside.
